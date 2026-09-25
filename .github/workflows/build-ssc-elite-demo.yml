@@ -1,0 +1,47 @@
+name: Build SSC ELITE Demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build ARM64 iOS IPA
+        run: |
+          set -euxo pipefail
+
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+
+          mkdir -p build/Payload/SSCEliteDemo.app
+
+          xcrun clang \
+            -target arm64-apple-ios16.0 \
+            -isysroot "$SDK" \
+            -fobjc-arc \
+            -fmodules \
+            main.m \
+            -framework UIKit \
+            -framework Foundation \
+            -framework QuartzCore \
+            -o build/Payload/SSCEliteDemo.app/SSCEliteDemo
+
+          cp Info.plist build/Payload/SSCEliteDemo.app/Info.plist
+
+          file build/Payload/SSCEliteDemo.app/SSCEliteDemo
+
+          cd build
+          zip -r SSC-ELITE-Demo-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SSC-ELITE-Demo-unsigned
+          path: build/SSC-ELITE-Demo-unsigned.ipa
