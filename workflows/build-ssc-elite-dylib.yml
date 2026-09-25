@@ -1,0 +1,47 @@
+name: Build SSC ELITE Dylib
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "SSCEliteMenu.m"
+      - ".github/workflows/build-ssc-elite-dylib.yml"
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build ARM64 iOS dylib
+        run: |
+          set -euxo pipefail
+
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          mkdir -p build
+
+          xcrun clang \
+            -target arm64-apple-ios16.0 \
+            -isysroot "$SDK" \
+            -fobjc-arc \
+            -fmodules \
+            -dynamiclib \
+            SSCEliteMenu.m \
+            -framework UIKit \
+            -framework Foundation \
+            -framework QuartzCore \
+            -Wl,-install_name,@rpath/SSCEliteMenu.dylib \
+            -o build/SSCEliteMenu.dylib
+
+          file build/SSCEliteMenu.dylib
+          otool -L build/SSCEliteMenu.dylib
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: SSCEliteMenu-dylib
+          path: build/SSCEliteMenu.dylib
